@@ -1,0 +1,12 @@
+dist/
+build/
+.venv/
+__pycache__/
+.pytest_cache/
+*.spec
+_photos_db/
+_settings.json
+schema_dump.txt
+_articles/
+SPEC.md
+RELEASE_GUIDE.md
