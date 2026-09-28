@@ -1,4 +1,6 @@
-# iPhone Album Backup (Windows)
+# XYZETON Album Backup (Windows)
+
+A Windows tool that saves your iPhone photos with the album structure intact.
 
 ![Before / After](docs/images/before-after.png)
 
@@ -8,7 +10,7 @@ Photos in no album go to `_Unsorted`; videos and screenshots go to `_MediaTypes`
 (The screenshot is from the Japanese UI.)
 
 Backs up your iPhone photos and videos to a Windows PC **keeping your album and folder structure** —
-the thing Windows Photos and Explorer cannot do. Works offline over USB. No cloud, no account.
+the thing Windows Photos and Explorer cannot do. Runs locally over USB. No cloud service or account needed.
 
 - No freezes or "device unreachable" errors: it does not use the MTP path that Windows Photos uses
 - Keeps your **Albums / Folders** exactly as on the iPhone, plus **Media Types** folders (Videos, Selfies, Live Photos, Screenshots, …)
@@ -48,14 +50,14 @@ Nothing to install — just extract and run.
 1. **Right-click the zip → "Extract All"**.
    > ⚠ Do **not** double-click the exe from inside the zip preview. Windows would run it from a temporary
    > folder, and the album database (several GB) would have to be fetched again every time.
-2. Move the extracted **`iPhoneAlbumBackup`** folder wherever you like — e.g. `D:\iPhoneAlbumBackup`.
+2. Move the extracted **`XYZETONAlbumBackup`** folder wherever you like — e.g. `D:\XYZETONAlbumBackup`.
    - The folder will hold the iPhone album database (**several GB**; ~7 GB for 84,000 items), so pick a drive with room.
    - Keeping it in Downloads works, but you will lose the database when you clean that folder out.
    - `C:\Program Files` works too (if the folder is not writable the app stores its data under your user profile), but it is not recommended.
    - You can move the whole folder to another drive later; it keeps working.
 
 ## How to use (exe)
-1. Run `iPhoneAlbumBackup.exe`.
+1. Run `XYZETONAlbumBackup.exe`.
    If Windows shows "Windows protected your PC", click **More info → Run anyway** (unsigned indie software).
 2. Switch **Language** to English in the top-right corner (remembered next time).
 3. Connect the iPhone, unlock it, tap **Trust**. Keep it unlocked and connected during the backup.
@@ -162,7 +164,7 @@ The tool is free. There is an optional way to support development, but **it chan
 nothing about what you get** — no individual support, no warranty, no special build.
 The link may move, so the current one is kept in this README.
 
-[https://x.com/XYZETON］]
+[support link]
 
 ## Bundled source code
 
@@ -176,6 +178,15 @@ source\
 
 Run it from there if the exe is blocked on your machine (see above).
 
+## Network
+
+The tool's own code only connects to the Apple service on this PC (`127.0.0.1:27015`, Apple Mobile Device Service).
+It has no code that sends photos, album names, or logs to the internet.
+Note: a full run with the network disconnected (including third-party libraries) is still being verified.
+
 ## Author & License
-Author: **XYZETON**（X: @XYZETON）
-GPL-3.0-or-later. See LICENSE and THIRD_PARTY_NOTICES.md. Developed with assistance from Anthropic Claude.
+Author: **XYZETON**
+GPL-3.0-or-later. See LICENSE and THIRD_PARTY_NOTICES.md.
+Concept, UI design and real-device testing by the author; all implementation by Anthropic Claude (see "Who built this").
+
+This is independent software and is not affiliated with, or endorsed by, Apple Inc. iPhone is a trademark of Apple Inc.

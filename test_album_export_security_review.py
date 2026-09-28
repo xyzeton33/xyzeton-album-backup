@@ -1,4 +1,4 @@
-"""iPhone Album Backup security boundary regression tests
+"""XYZETON Album Backup security boundary regression tests
 
 別モデルによるセキュリティレビューの指摘（v3.1.0時点）。v3.2.0ですべて修正済み。
 改変された _album_state.json や、細工されたPhotos.sqlite(--db)が渡された場合に、

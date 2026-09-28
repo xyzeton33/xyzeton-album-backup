@@ -1,4 +1,4 @@
-"""iPhone Album Backup security follow-up tests（no real iPhone required）
+"""XYZETON Album Backup security follow-up tests（no real iPhone required）
 
 別モデルによるセキュリティレビューの四次指摘（v3.2.0時点）。v3.2.1ですべて修正済み。
 固定名の一時ファイル・symlink/junction経由の境界抜け・壊れたstateへの耐性を確認する。

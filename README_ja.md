@@ -1,4 +1,6 @@
-# iPhone アルバムバックアップ（Windows用）
+# XYZETON アルバムバックアップ（Windows用）
+
+iPhoneの写真を、アルバム構造のままWindowsへ保存するツールです。
 
 ![Before / After](docs/images/before-after.png)
 
@@ -36,12 +38,12 @@ E:\iPhoneAlbums\
 > ## 📍 このREADMEは2種類の人向けです
 >
 > - **① 自分でビルドする人（開発者・XYZETONさん）**
->   → `build.bat` をダブルクリックして `iPhoneAlbumBackup.exe` を作る。
+>   → `build.bat` をダブルクリックして `XYZETONAlbumBackup.exe` を作る。
 >     手順は下の「■ 開発者向け：exeのビルド」へ。
->     まだ `iPhoneAlbumBackup.exe` は存在しないので、「使い方（exe版）」を今すぐ読んでも実行できません。
+>     まだ `XYZETONAlbumBackup.exe` は存在しないので、「使い方（exe版）」を今すぐ読んでも実行できません。
 >
 > - **② 完成したzipを受け取った人（配布・購入した人）**
->   → 下の「■ 使い方（exe版・おすすめ）」からどうぞ。`iPhoneAlbumBackup.exe` が既にzipの中に入っています。
+>   → 下の「■ 使い方（exe版・おすすめ）」からどうぞ。`XYZETONAlbumBackup.exe` が既にzipの中に入っています。
 
 ---
 
@@ -52,11 +54,11 @@ E:\iPhoneAlbums\
 
 ```
 dist\
- ├─ iPhoneAlbumBackup\              アプリ本体のフォルダ
- │   ├─ iPhoneAlbumBackup.exe       ★ 動作確認はこれを実行
+ ├─ XYZETONAlbumBackup\              アプリ本体のフォルダ
+ │   ├─ XYZETONAlbumBackup.exe       ★ 動作確認はこれを実行
  │   ├─ _internal\                  必要な部品（触らない）
  │   └─ album_export.py / LICENSE / README など（GPLのためソースも同梱）
- ├─ iPhoneAlbumBackup_vX.X.X.zip    ★ これをBOOTH / GitHub Releases にアップロード
+ ├─ XYZETONAlbumBackup_vX.X.X.zip    ★ これをBOOTH / GitHub Releases にアップロード
  └─ SHA256.txt                      ★ この中身をダウンロードの横に掲載
 ```
 
@@ -69,10 +71,10 @@ dist\
 | `build` | PyInstallerの中間ファイル | 消してよい |
 | `.venv` | ビルド専用のPython環境（毎回作り直し） | 消してよい |
 | `__pycache__` / `.pytest_cache` | Python・テストのキャッシュ | 消してよい |
-| `iPhoneAlbumBackup.spec` | PyInstallerの自動生成設定 | 消してよい |
+| `XYZETONAlbumBackup.spec` | PyInstallerの自動生成設定 | 消してよい |
 3. **まずここで自分のiPhoneを繋いで動作確認**（1→2→3 のボタンを一通り）
-4. 問題なければ `dist\iPhoneAlbumBackup` フォルダを **zip に圧縮**したものが配布物です
-   （中の `iPhoneAlbumBackup.exe` をダブルクリックして動くか、別PCでも確認推奨）
+4. 問題なければ `dist\XYZETONAlbumBackup` フォルダを **zip に圧縮**したものが配布物です
+   （中の `XYZETONAlbumBackup.exe` をダブルクリックして動くか、別PCでも確認推奨）
 5. そのzipをBOOTH等にアップロード → 以降は下記「■ 使い方（exe版）」が購入者向けの説明になります
 
 ---
@@ -135,16 +137,16 @@ dist\
 1. ダウンロードした zip を**右クリック →「すべて展開」**
    > ⚠ **zipを開いた中のexeを直接ダブルクリックしないでください。**
    > 一時フォルダで動いてしまい、次回起動時にアルバム情報（数GB）を取り直すことになります。必ず先に展開してください。
-2. 展開してできた **`iPhoneAlbumBackup`** フォルダを、置いておきたい場所へ移動します
+2. 展開してできた **`XYZETONAlbumBackup`** フォルダを、置いておきたい場所へ移動します
 
 **置き場所の選び方**
-- おすすめ: `D:\iPhoneAlbumBackup` や `C:\Users\<自分の名前>\iPhoneAlbumBackup` など、**自分で自由に書き込める場所**
+- おすすめ: `D:\XYZETONAlbumBackup` や `C:\Users\<自分の名前>\XYZETONAlbumBackup` など、**自分で自由に書き込める場所**
 - このフォルダの中に、iPhoneのアルバム情報（**数GB**。iPhone 11 Pro Max・8万枚で約7GB）が保存されます。**その分の空き容量があるドライブ**に置いてください
 - 「ダウンロード」フォルダのままでも動きますが、後で掃除した時に一緒に消えて、次回また数GBの取得が必要になります
 - `C:\Program Files` に置いても動きます（書き込めない場合は自動でユーザー領域に保存先を切り替えます）が、おすすめしません
 - フォルダごと別のドライブへ移動しても、そのまま使えます
 
-3. フォルダの中の **`iPhoneAlbumBackup.exe`** をダブルクリック（よく使うならショートカットをデスクトップに作ると便利です）
+3. フォルダの中の **`XYZETONAlbumBackup.exe`** をダブルクリック（よく使うならショートカットをデスクトップに作ると便利です）
 
 > **「WindowsによってPCが保護されました」と出たら**
 > 個人開発のソフトに必ず出る警告です（有料の証明書を買わないと消えません）。
@@ -372,7 +374,7 @@ py -3.12 gui.py                                # GUI版
 **支援によって内容が変わることはありません**（個別対応・動作保証・特別なビルドは付きません）。
 窓口の場所は変わる可能性があるため、最新の案内はこのREADMEに記載します。
 
-［https://x.com/XYZETON］
+［支援窓口URL］
 
 ## 同梱しているソースコード
 
@@ -386,10 +388,18 @@ source\
 
 exeが使えない環境では、ここから直接実行できます（上のよくある質問を参照）。
 
+## 通信について
+
+このツール自身のコードが接続するのは、PC内のAppleのサービス（`127.0.0.1:27015`、Apple Mobile Device Service）だけです。
+写真・アルバム名・ログをインターネットへ送る処理はありません。
+※ 利用しているライブラリを含め、ネットを切った状態で最後まで動くかは現在確認中です。
+
 ## 作者・ライセンス
-作者: **XYZETON**（X: @XYZETON）
+作者: **XYZETON**（X: @xyzeton ← 公開時に実アカウントへ）
 GPL-3.0-or-later（LICENSE 参照）。利用ライブラリの表記は THIRD_PARTY_NOTICES.md。
-本ソフトは AI（Anthropic Claude）の支援を受けて開発されました。
+企画・画面設計・実機検証は作者が、プログラムの実装は Anthropic Claude が担当しました（「誰が作ったか」参照）。
+
+本ツールは Apple Inc. とは無関係の個人開発ソフトウェアです。iPhone は Apple Inc. の商標です。
 
 ## 仕組み（興味のある人向け）
 iPhoneのアルバムは「フォルダ」ではなく、写真アプリ内部のデータベース（Photos.sqlite）の分類タグです。

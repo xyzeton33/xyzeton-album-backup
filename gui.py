@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-iPhone Album Backup - GUI (customtkinter)
+XYZETON Album Backup - GUI (customtkinter)
 Copyright (C) 2026  XYZETON
 
 This program is free software: you can redistribute it and/or modify
@@ -16,9 +16,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-Project: https://github.com/XYZETON/iphone-album-backup
+Project: https://github.com/xyzeton33/xyzeton-album-backup
 Developed with assistance from Anthropic Claude.
-gui.py ── iPhoneアルバムバックアップ GUI版（customtkinter）
+gui.py ── XYZETON アルバムバックアップ GUI版（customtkinter）
 エンジンは album_export.py。
 """
 import argparse, asyncio, ctypes, json, os, queue, sys, threading, time, traceback
@@ -28,15 +28,15 @@ import customtkinter as ctk
 
 import album_export as engine
 
-VERSION = "3.3.0"
+VERSION = "3.3.1"
 AUTHOR = "XYZETON"
-REPO = "https://github.com/XYZETON/iphone-album-backup"
+REPO = "https://github.com/xyzeton33/xyzeton-album-backup"
 AUTHOR = "XYZETON"
-REPO_URL = "https://github.com/XYZETON/iphone-album-backup"  # 公開時に実際のURLへ
+REPO_URL = "https://github.com/xyzeton33/xyzeton-album-backup"  # 公開時に実際のURLへ
 SETTINGS = "_settings.json"
 
 STR = {
- "title": ("iPhone アルバムバックアップ", "iPhone Album Backup"),
+ "title": ("XYZETON アルバムバックアップ", "XYZETON Album Backup"),
  "tagline": ("iPhoneのアルバム構成をそのまま、パソコンのフォルダに保存します。上から順に進めてください。",
              "Backs up your iPhone albums as folders on this PC, keeping the same structure. Work top to bottom."),
  "dest": ("保存先", "Save to"), "dest_ph": ("例: E:\\iPhoneAlbums", "e.g. E:\\iPhoneAlbums"), "browse": ("フォルダを選ぶ", "Choose folder…"),
@@ -75,13 +75,13 @@ STR = {
  "credit": (f"© 2026 {AUTHOR}  ·  GPL-3.0（無保証）  ·  AI支援で開発",
             f"© 2026 {AUTHOR}  ·  GPL-3.0 (no warranty)  ·  built with AI assistance"),
  "about": ("このツールについて", "About"),
- "about_body": (f"iPhone アルバムバックアップ v{VERSION}\n作者: {AUTHOR}\n\n"
+ "about_body": (f"XYZETON アルバムバックアップ v{VERSION}\n作者: {AUTHOR}\n\n"
                 f"ライセンス: GNU General Public License v3.0 以降\n"
                 f"このプログラムは無保証です。詳細は同梱の LICENSE をご覧ください。\n"
                 f"ソースコードは配布物に同梱、および下記で公開しています。\n{REPO}\n\n"
                 f"利用ライブラリの表記は THIRD_PARTY_NOTICES.md をご覧ください。\n"
                 f"開発には Anthropic Claude の支援を受けています。",
-                f"iPhone Album Backup v{VERSION}\nAuthor: {AUTHOR}\n\n"
+                f"XYZETON Album Backup v{VERSION}\nAuthor: {AUTHOR}\n\n"
                 f"License: GNU General Public License v3.0 or later\n"
                 f"This program comes with ABSOLUTELY NO WARRANTY. See the bundled LICENSE.\n"
                 f"Source code is bundled with this release and published at:\n{REPO}\n\n"
@@ -121,10 +121,48 @@ MEDIA_ORDER = ["ビデオ", "セルフィー", "Live Photos", "ポートレー�
                "タイムラプス", "スローモーション", "スクリーンショット", "画面録画", "アニメーション"]
 
 
+_OPTION_FLAGS = ("date_prefix", "refresh_db", "prune", "fast_rescan", "media_on")
+
+
+def _normalize_settings(d):
+    """_settings.json の中身を、GUIが前提とする型にそろえる。
+    JSONとしては正しくても型が違う（"options" が配列など）と、起動時に落ちて
+    設定ファイルを消すまで使えなくなるため。型が合わない項目だけ捨て、残りは保つ。"""
+    if not isinstance(d, dict):
+        return {}
+    if d.get("lang") not in ("ja", "en"):
+        d.pop("lang", None)
+    if not isinstance(d.get("out", ""), str):
+        d.pop("out", None)
+    opts = d.get("options")
+    if opts is not None:
+        if not isinstance(opts, dict):
+            d.pop("options", None)
+        else:
+            for k in _OPTION_FLAGS:
+                if k in opts and not isinstance(opts[k], bool):
+                    opts.pop(k)
+            mt = opts.get("media_types")
+            if mt is not None:
+                if isinstance(mt, list):
+                    opts["media_types"] = [x for x in mt if isinstance(x, str)]
+                else:
+                    opts.pop("media_types")
+    last = d.get("last_backup")
+    if last is not None:
+        if not isinstance(last, dict):
+            d.pop("last_backup", None)
+        else:
+            for k in ("when", "items"):
+                if k in last and not isinstance(last[k], str):
+                    last.pop(k)
+    return d
+
+
 def load_settings():
     try:
         with open(os.path.join(engine.app_dir(), SETTINGS), encoding="utf-8") as f:
-            return json.load(f)
+            return _normalize_settings(json.load(f))
     except Exception:
         return {}
 

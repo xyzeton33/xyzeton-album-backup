@@ -1,4 +1,4 @@
-"""iPhone Album Backup: 実機不要のリグレッションテスト
+"""XYZETON Album Backup: 実機不要のリグレッションテスト
 
     python -m pytest -q test_album_export.py
 

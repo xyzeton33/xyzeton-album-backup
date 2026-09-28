@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 r"""
-iPhone Album Backup - backup engine (Photos.sqlite parser + AFC downloader)
+XYZETON Album Backup - backup engine (Photos.sqlite parser + AFC downloader)
 Copyright (C) 2026  XYZETON
 
 This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-Project: https://github.com/XYZETON/iphone-album-backup
+Project: https://github.com/xyzeton33/xyzeton-album-backup
 Developed with assistance from Anthropic Claude.
 album_export.py  ── iPhoneの「アルバム」構造を保ったままWindowsへバックアップ
 
@@ -148,7 +148,7 @@ def app_dir():
         _APP_DIR = base
     except OSError:
         fallback = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-        _APP_DIR = os.path.join(fallback, "iPhoneAlbumBackup")
+        _APP_DIR = os.path.join(fallback, "XYZETONAlbumBackup")
         os.makedirs(_APP_DIR, exist_ok=True)
     finally:
         if made:
@@ -291,8 +291,12 @@ async def pull_one(afc, remote, local, label):
     if start:
         log(t(f"   {label}: 前回の続き（{start/1024**2:,.0f} MB）から再開します", f"   {label}: resuming from {start/1024**2:,.0f} MB"))
     else:
+        _drop_link_before_write(meta)
         with open(meta, "w") as f:
             f.write(str(size))
+    _drop_link_before_write(part)
+    if start and not os.path.exists(part):
+        start = 0
     h = await afc.fopen(remote, "r")
     if start:
         await afc.fseek(h, start, os.SEEK_SET)
@@ -378,6 +382,19 @@ async def pull_photos_db(afc, dbdir, refresh=False):
 
 
 # ============================================================ DB解析
+def _qi(name):
+    """SQL識別子のクォート。Photos.sqlite の表名・列名は外部由来なので、そのまま埋め込まない"""
+    return '"' + str(name).replace('"', '""') + '"'
+
+
+def _gmtime_or_none(ts):
+    """撮影日時→struct_time。DB由来の値が範囲外/NaN/型違いでも全体を止めない"""
+    try:
+        return time.gmtime(ts)
+    except (OverflowError, OSError, ValueError, TypeError):
+        return None
+
+
 def dump_schema(cur, path):
     """検出失敗時の診断用: Z_/ZASSET/ZGENERICALBUM 系の表と列を書き出す"""
     with open(path, "w", encoding="utf-8") as f:
@@ -385,9 +402,9 @@ def dump_schema(cur, path):
         for name in names:
             u = name.upper()
             if u.startswith("Z_") or "ASSET" in u or "ALBUM" in u:
-                cols = [r[1] for r in cur.execute(f'PRAGMA table_info("{name}")')]
+                cols = [r[1] for r in cur.execute(f'PRAGMA table_info({_qi(name)})')]
                 try:
-                    n = cur.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
+                    n = cur.execute(f'SELECT COUNT(*) FROM {_qi(name)}').fetchone()[0]
                 except Exception:
                     n = "?"
                 f.write(f"{name} (rows={n}): {', '.join(cols)}\n")
@@ -417,7 +434,7 @@ def find_join_table(cur, cols):
         cs = [c for c in cols(name) if not c.startswith("Z_FOK")]
         if not (2 <= len(cs) <= 4):
             continue
-        rows = cur.execute(f'SELECT {", ".join(cs)} FROM "{name}"').fetchall()
+        rows = cur.execute(f'SELECT {", ".join(_qi(c) for c in cs)} FROM {_qi(name)}').fetchall()
         if len(rows) < 3:
             continue
         for ai, ac in enumerate(cs):
@@ -459,7 +476,7 @@ def parse_albums(db_path):
     con = sqlite3.connect(db_path)  # ローカルコピーなのでRWで開きWALを適用
     try:
         cur = con.cursor()
-        cols = lambda tbl: [r[1] for r in cur.execute(f'PRAGMA table_info("{tbl}")').fetchall()]
+        cols = lambda tbl: [r[1] for r in cur.execute(f'PRAGMA table_info({_qi(tbl)})').fetchall()]
         tables = {r[0] for r in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
         dump_path = os.path.join(app_dir(), "schema_dump.txt")
 
@@ -538,9 +555,9 @@ def parse_albums(db_path):
             return os.path.join(*parts)
 
         q = f"""SELECT g.Z_PK, a.ZDIRECTORY, a.ZFILENAME
-                FROM "{join_tbl}" j
-                JOIN ZGENERICALBUM g ON g.Z_PK=j.{alb_col}
-                JOIN ZASSET a ON a.Z_PK=j.{ast_col}
+                FROM {_qi(join_tbl)} j
+                JOIN ZGENERICALBUM g ON g.Z_PK=j.{_qi(alb_col)}
+                JOIN ZASSET a ON a.Z_PK=j.{_qi(ast_col)}
                 WHERE g.ZKIND={KIND_USER_ALBUM} AND g.ZTITLE IS NOT NULL AND {a_ok} AND {g_ok}"""
         # Windowsで使えない文字を変換した結果、別々のアルバムが同じフォルダ名に
         # 潰れることがある（例: "A:B" と "A?B" がどちらも "A_B"）。
@@ -598,8 +615,10 @@ def parse_albums(db_path):
             for d, fn, created, tz in cur.execute(
                     f"SELECT a.ZDIRECTORY, a.ZFILENAME, a.ZDATECREATED, {tz_col} "
                     f"FROM ZASSET a {tz_join} WHERE {a_ok}").fetchall():
-                if d and fn and created is not None:
-                    dates[f"{d}/{fn}"] = APPLE_EPOCH + created + (tz or 0)
+                if d and fn and isinstance(created, (int, float)) and isinstance(tz or 0, (int, float)):
+                    ts = APPLE_EPOCH + created + (tz or 0)
+                    if _gmtime_or_none(ts) is not None:      # 範囲外/NaN は「日付不明」扱い
+                        dates[f"{d}/{fn}"] = ts
         # メディアタイプ判定に使う列（存在するものだけ使う）
         media, raw_combo = {}, {}
         want = [c for c in ("ZKIND", "ZKINDSUBTYPE", "ZPLAYBACKSTYLE", "ZDEPTHTYPE") if c in acols]
@@ -870,7 +889,12 @@ async def download(afc, remote, local, size, retries=3):
         h = None
         cancelled = None
         try:
+            # .part/.size の位置にリンクが仕込まれていたら外す（外のファイルへの追記・上書き防止）
+            _drop_link_before_write(part)
+            if start and not os.path.exists(part):
+                start = 0
             if use_meta and not start:
+                _drop_link_before_write(meta)
                 with open(meta, "w") as f:
                     f.write(str(size))
             # 先にPC側のファイルを開く。iPhone側を開いてから待つと、
@@ -1107,6 +1131,7 @@ async def pull_dcim(afc, cache, files, out, reconnect=None, close_dead=None):
         _drop_stale_reports(out, ("_取得失敗一覧.txt", "_failed_downloads.txt"))
     if failed:
         p = os.path.join(out, t("_取得失敗一覧.txt", "_failed_downloads.txt"))
+        _drop_link_before_write(p)
         with open(p, "w", encoding="utf-8") as f:
             f.write(t("このファイルは取得に失敗した写真の一覧です。もう一度バックアップを実行すると再試行されます。\n\n", "Files that could not be downloaded. Run the backup again to retry them.\n\n"))
             for r, e in failed:
@@ -1139,6 +1164,7 @@ def report_cloud_only(out, albums, all_files, remote_files):
         for rel in files:
             where.setdefault(rel, []).append(p)
     path = os.path.join(out, t("_iCloudにしか無い写真.txt", "_cloud_only_photos.txt"))
+    _drop_link_before_write(path)
     with open(path, "w", encoding="utf-8") as f:
         f.write(t("以下の写真は iPhone 本体に実体が無く（iCloudに最適化済み）、このツールではまだ取得できていません。\n"
                   "iPhone の 設定 → 写真 → 「オリジナルをダウンロード」にして、Wi-Fi で時間を置いてから再実行してください。\n"
@@ -1266,7 +1292,8 @@ def place_asset(rel, cache, dst_dir, dates=None, date_prefix=True, placed=None, 
     prefix = ""
     if ts is not None:
         # 撮影日時(現地)を YYYYMMDD_HHMMSS_ で先頭に。ファイルの更新日時も撮影日時に合わせる
-        prefix = time.strftime("%Y%m%d_%H%M%S_", time.gmtime(ts)) if date_prefix else ""
+        tm = _gmtime_or_none(ts)
+        prefix = time.strftime("%Y%m%d_%H%M%S_", tm) if (date_prefix and tm) else ""
         try:
             os.utime(src, (ts, ts))  # ハードリンクは実体共有なので全リンクに反映
         except OSError:
@@ -1275,10 +1302,11 @@ def place_asset(rel, cache, dst_dir, dates=None, date_prefix=True, placed=None, 
     if placed is not None and p:
         placed.add(_pkey(p))
     # Live Photos: 同名 .MOV があれば一緒に（同じ日付プレフィックスで）
-    stem, ext = os.path.splitext(src)
+    rel_stem, ext = os.path.splitext(rel)
     if ext.upper() in (".HEIC", ".JPG", ".JPEG"):
-        for mov in (stem + ".MOV", stem + ".mov"):
-            if os.path.exists(mov):
+        for rel_mov in (rel_stem + ".MOV", rel_stem + ".mov"):
+            mov = safe_cache_path(cache, rel_mov)   # 写真と対になる動画(.MOV)も同じ境界チェックを通す
+            if mov is not None and os.path.exists(mov):
                 if ts is not None:
                     try:
                         os.utime(mov, (ts, ts))
@@ -1338,6 +1366,7 @@ def save_state(out, album_keys, prev, dropped=()):
     merged.update({k: p for p, k in album_keys.items()})
     path = os.path.join(out, STATE_FILE)
     tmp = path + ".tmp"
+    _drop_link_before_write(tmp)
     with open(tmp, "w", encoding="utf-8") as f:   # 途中で電源が落ちてもJSONが壊れないように
         json.dump({"albums": merged, "special": special_names()}, f, ensure_ascii=False, indent=1)
         f.flush()
@@ -1389,6 +1418,22 @@ def check_hardlink(cache, out):
     return False
 
 
+def _drop_link_before_write(path):
+    """固定名・派生名のファイルへ書き込む直前に呼ぶ。
+    その名前に symlink / ハードリンク（リンク数>1）が置かれていると、open(..., "w"/"a") が
+    リンク先（保存先の外のファイル）を上書き・追記してしまうため、リンク自体を外す。
+    ディレクトリ（ジャンクション含む）が置かれている場合は触らずに拒否する。"""
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return
+    if is_linkish(path) or st.st_nlink > 1:
+        if os.path.isdir(path):
+            raise OSError(errno.EEXIST, t(f"リンクのため書き込みを拒否しました: {path}",
+                                          f"refused to write through a link: {path}"))
+        os.remove(path)     # リンク自体を消す（リンク先は消えない）
+
+
 def is_linkish(path):
     """symlink または（Windowsの）NTFSジャンクションかどうか。
     このツールはこれらを自分では作らないため、見つけても触らずスキップするのが最も安全。
@@ -1403,16 +1448,16 @@ def is_linkish(path):
 def move_without_loss(src, dst):
     """src を dst へ移動。同名が既にある場合、同じ実体ならリンクを1本にまとめ、
     別物なら連番を付けて退避する（消さない）。戻り値は実際の移動先。"""
-    if not os.path.exists(dst):
+    if not os.path.lexists(dst):
         shutil.move(src, dst)
         return dst
-    if os.path.samefile(src, dst):
+    if not is_linkish(dst) and os.path.exists(dst) and os.path.samefile(src, dst):
         os.remove(src)      # 同じ実体を指すリンク → 片方で十分
         return dst
     stem, ext = os.path.splitext(dst)
     for i in range(2, 10000):
         alt = f"{stem}_{i}{ext}"
-        if not os.path.exists(alt):
+        if not os.path.lexists(alt):
             shutil.move(src, alt)
             return alt
     raise RuntimeError(t(f"同名ファイルの退避先を作れませんでした: {dst}",
@@ -1427,12 +1472,20 @@ def _move_merge(src_dir, dst_dir):
         log(t(f"   ⚠ シンボリックリンク/ジャンクションのため処理をスキップしました: {src_dir}",
               f"   ⚠ skipped a symlink/junction: {src_dir}"))
         return
-    if not os.path.exists(dst_dir):
+    if is_linkish(dst_dir):
+        log(t(f"   ⚠ 移動先がシンボリックリンク/ジャンクションのため処理をスキップしました: {dst_dir}",
+              f"   ⚠ skipped: the destination is a symlink/junction: {dst_dir}"))
+        return
+    if not os.path.lexists(dst_dir):
         os.makedirs(os.path.dirname(dst_dir) or ".", exist_ok=True)
         shutil.move(src_dir, dst_dir)
         return
     for name in os.listdir(src_dir):
         s_, d_ = os.path.join(src_dir, name), os.path.join(dst_dir, name)
+        if is_linkish(d_):
+            log(t(f"   ⚠ 移動先がシンボリックリンク/ジャンクションのため処理をスキップしました: {d_}",
+                  f"   ⚠ skipped: the destination is a symlink/junction: {d_}"))
+            continue
         if is_linkish(s_):
             log(t(f"   ⚠ シンボリックリンク/ジャンクションのため処理をスキップしました: {s_}",
                   f"   ⚠ skipped a symlink/junction: {s_}"))
@@ -1520,7 +1573,11 @@ def reconcile_renames(out, album_keys, prev):
     if not moves:
         return
 
-    tmp_root = os.path.join(out, RENAME_TMP)
+    tmp_root = safe_managed_path(out, RENAME_TMP)
+    if tmp_root is None or is_linkish(tmp_root):
+        log(t(f"   ⚠ {RENAME_TMP} がシンボリックリンク/ジャンクションのため改名をスキップしました",
+              f"   ⚠ skipped renames: {RENAME_TMP} is a symlink/junction"))
+        return
     os.makedirs(tmp_root, exist_ok=True)
     staged = []
     try:
@@ -1609,7 +1666,11 @@ def prune(out, album_keys, prev, placed, managed_dirs):
             _check_cancel()
             fp = os.path.join(d, name)
             if os.path.isfile(fp) and _pkey(fp) not in placed:
-                dst_dir = os.path.join(removed_root, rel_dir)
+                dst_dir = safe_managed_path(out, os.path.join(sp("removed"), rel_dir))
+                if dst_dir is None:
+                    log(t(f"   ⚠ 退避先がシンボリックリンク/ジャンクション経由のためスキップしました: {rel_dir}",
+                          f"   ⚠ skipped: the removal folder goes through a symlink/junction: {rel_dir}"))
+                    break
                 os.makedirs(dst_dir, exist_ok=True)
                 move_without_loss(fp, os.path.join(dst_dir, name))
                 n += 1
@@ -1748,6 +1809,7 @@ async def run(args):
         diag_dir = os.path.abspath(args.out) if args.out else app_dir()
         os.makedirs(diag_dir, exist_ok=True)
         diag = os.path.join(diag_dir, t("_メディアタイプ診断.txt", "_media_type_diagnostics.txt"))
+        _drop_link_before_write(diag)
         with open(diag, "w", encoding="utf-8") as f:
             f.write(t("種類判定の元データ（件数が iPhone と合わない時に、このファイルを共有してください）\n", "Raw values used for media-type detection (share this file if the counts differ from the iPhone)\n"))
             f.write("ZKIND\tZKINDSUBTYPE\tZPLAYBACKSTYLE\tZDEPTHTYPE\tZCAMERACAPTUREDEVICE\t" + t("拡張子\t件数\t判定", "ext\tcount\ttype") + "\n")
@@ -1804,7 +1866,8 @@ async def run(args):
         for rel in unsorted:
             _check_cancel()
             ts = dates.get(rel)
-            sub = time.strftime("%Y/%Y-%m", time.gmtime(ts)) if ts else sp("nodate")
+            tm = _gmtime_or_none(ts) if ts else None
+            sub = time.strftime("%Y/%Y-%m", tm) if tm else sp("nodate")
             d = os.path.join(out, sp("unsorted"), *sub.split("/"))
             unsorted_dirs.add(d)
             if not place_asset(rel, cache, d, dates, not args.no_date_prefix, placed, out_root=out):
@@ -1824,7 +1887,8 @@ async def run(args):
                 if not mtype or mtype not in wanted:
                     continue
                 ts = dates.get(rel)
-                sub = time.strftime("%Y/%Y-%m", time.gmtime(ts)) if ts else sp("nodate")
+                tm = _gmtime_or_none(ts) if ts else None
+                sub = time.strftime("%Y/%Y-%m", tm) if tm else sp("nodate")
                 d = os.path.join(out, sp("media"), safe(media_name(mtype)), *sub.split("/"))
                 media_dirs.add(d)
                 if place_asset(rel, cache, d, dates, not args.no_date_prefix, placed, out_root=out):

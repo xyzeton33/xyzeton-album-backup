@@ -1,4 +1,4 @@
-"""iPhone Album Backup v3.2.2 final security follow-up tests (no real iPhone required)
+"""XYZETON Album Backup v3.2.2 final security follow-up tests (no real iPhone required)
 
 Run:
     python -m pytest -q test_album_export_v322_final_security.py

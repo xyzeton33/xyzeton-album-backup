@@ -2,11 +2,11 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 REM ============================================================
-REM  iPhoneAlbumBackup - Windows build script
+REM  XYZETONAlbumBackup - Windows build script
 REM  Copyright (C) 2026 XYZETON. GPL-3.0-or-later.
 REM  Requires: Python 3.12 (must be runnable as "py -3.12")
-REM  Output:   dist\iPhoneAlbumBackup\      (the app)
-REM            dist\iPhoneAlbumBackup_vX.zip (upload this)
+REM  Output:   dist\XYZETONAlbumBackup\      (the app)
+REM            dist\XYZETONAlbumBackup_vX.zip (upload this)
 REM            dist\SHA256.txt               (publish next to the download)
 REM
 REM  NOTE: kept 100 percent ASCII on purpose - non-ASCII text inside a
@@ -67,13 +67,35 @@ if errorlevel 1 goto :err
 echo [2.5/6] Running device-free tests (pytest)...
 python -m pip install --no-cache-dir pytest >nul
 REM Collect every test_*.py automatically. pytest skips dist, build and .venv
-python -m pytest -q
-if errorlevel 1 (
+python -m pytest -q -rs > "%TEMP%\iab_pytest_result.txt" 2>&1
+set PYTEST_RC=%errorlevel%
+type "%TEMP%\iab_pytest_result.txt"
+if not "%PYTEST_RC%"=="0" (
   echo.
   echo   TESTS FAILED. Do not ship this build.
   echo   Scroll up to see which test failed, and fix it first.
   goto :err
 )
+
+REM A skipped test is an untested test. Symlink tests are skipped on PCs where
+REM Developer Mode is off, so a release build must have zero skips.
+REM To build anyway for personal use: run "set ALLOW_SKIP=1" before build.bat.
+findstr /r /c:"[0-9][0-9]* skipped" "%TEMP%\iab_pytest_result.txt" >nul
+if errorlevel 1 goto :noskip
+if defined ALLOW_SKIP (
+  echo.
+  echo   WARNING: some tests were SKIPPED. ALLOW_SKIP is set, so the build continues.
+  echo   Do NOT publish this build.
+  goto :noskip
+)
+echo.
+echo   SOME TESTS WERE SKIPPED, so part of the safety checks did not run.
+echo   Turn on Developer Mode:
+echo     Settings - Privacy and security - For developers - Developer Mode
+echo   then run build.bat again.
+echo   (For a personal build only: run "set ALLOW_SKIP=1" first.)
+goto :err
+:noskip
 
 REM Unused optional dependencies of pymobiledevice3 (FFmpeg via av, Pillow, jedi, IPython)
 REM are excluded. The tool never imports them, and bundling them would require
@@ -81,34 +103,34 @@ REM shipping their license texts (FFmpeg is LGPL). See THIRD_PARTY_NOTICES.md.
 echo [3/6] Building the exe (this can take a few minutes)...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
-python -m PyInstaller --noconfirm --onedir --windowed --name iPhoneAlbumBackup --collect-all pymobiledevice3 --collect-all customtkinter --exclude-module av --exclude-module PIL --exclude-module jedi --exclude-module IPython --add-data "album_export.py;." --add-data "LICENSE;." --add-data "README_ja.md;." --add-data "README_en.md;." gui.py
+python -m PyInstaller --noconfirm --onedir --windowed --name XYZETONAlbumBackup --collect-all pymobiledevice3 --collect-all customtkinter --exclude-module av --exclude-module PIL --exclude-module jedi --exclude-module IPython --add-data "album_export.py;." --add-data "LICENSE;." --add-data "README_ja.md;." --add-data "README_en.md;." gui.py
 if errorlevel 1 goto :err
 
 echo [4/6] Copying bundled files (source code included per GPL)...
-mkdir dist\iPhoneAlbumBackup\source 2>nul
-mkdir dist\iPhoneAlbumBackup\source\tests 2>nul
-copy /y album_export.py dist\iPhoneAlbumBackup\source\ >nul
-copy /y gui.py          dist\iPhoneAlbumBackup\source\ >nul
-copy /y probe.py        dist\iPhoneAlbumBackup\source\ >nul
-copy /y conftest.py     dist\iPhoneAlbumBackup\source\ >nul
-copy /y build.bat       dist\iPhoneAlbumBackup\source\ >nul
-copy /y test_*.py       dist\iPhoneAlbumBackup\source\tests\ >nul
-copy /y LICENSE dist\iPhoneAlbumBackup\ >nul
-copy /y README_ja.md dist\iPhoneAlbumBackup\ >nul
-copy /y README_en.md dist\iPhoneAlbumBackup\ >nul
-copy /y THIRD_PARTY_NOTICES.md dist\iPhoneAlbumBackup\ >nul
+mkdir dist\XYZETONAlbumBackup\source 2>nul
+mkdir dist\XYZETONAlbumBackup\source\tests 2>nul
+copy /y album_export.py dist\XYZETONAlbumBackup\source\ >nul
+copy /y gui.py          dist\XYZETONAlbumBackup\source\ >nul
+copy /y probe.py        dist\XYZETONAlbumBackup\source\ >nul
+copy /y conftest.py     dist\XYZETONAlbumBackup\source\ >nul
+copy /y build.bat       dist\XYZETONAlbumBackup\source\ >nul
+copy /y test_*.py       dist\XYZETONAlbumBackup\source\tests\ >nul
+copy /y LICENSE dist\XYZETONAlbumBackup\ >nul
+copy /y README_ja.md dist\XYZETONAlbumBackup\ >nul
+copy /y README_en.md dist\XYZETONAlbumBackup\ >nul
+copy /y THIRD_PARTY_NOTICES.md dist\XYZETONAlbumBackup\ >nul
 if exist docs (
-  mkdir dist\iPhoneAlbumBackup\docs 2>nul
-  copy /y docs\*.md dist\iPhoneAlbumBackup\docs\ >nul
+  mkdir dist\XYZETONAlbumBackup\docs 2>nul
+  copy /y docs\*.md dist\XYZETONAlbumBackup\docs\ >nul
 )
 
 echo [5/6] Creating the distribution zip...
 set VER=
 for /f "tokens=3 delims= " %%a in ('findstr /C:"VERSION = " gui.py') do set VER=%%~a
 if "%VER%"=="" set VER=unknown
-set ZIP=dist\iPhoneAlbumBackup_v%VER%.zip
+set ZIP=dist\XYZETONAlbumBackup_v%VER%.zip
 if exist "%ZIP%" del /q "%ZIP%"
-powershell -NoProfile -Command "Compress-Archive -Path 'dist\iPhoneAlbumBackup\*' -DestinationPath '%ZIP%' -Force"
+powershell -NoProfile -Command "Compress-Archive -Path 'dist\XYZETONAlbumBackup\*' -DestinationPath '%ZIP%' -Force"
 if not exist "%ZIP%" goto :err
 
 echo [6/6] Computing SHA-256 (publish this next to the download)...
@@ -117,14 +139,14 @@ for /f "skip=1 tokens=*" %%h in ('certutil -hashfile "%ZIP%" SHA256') do (
   if not defined HASH set HASH=%%h
 )
 set HASH=!HASH: =!
-> dist\SHA256.txt echo iPhoneAlbumBackup_v%VER%.zip
+> dist\SHA256.txt echo XYZETONAlbumBackup_v%VER%.zip
 >> dist\SHA256.txt echo SHA-256: !HASH!
 >> dist\SHA256.txt echo Built: %DATE%
 
 echo.
 echo ============================================================
 echo Done.  version %VER%
-echo   app  : dist\iPhoneAlbumBackup\iPhoneAlbumBackup.exe
+echo   app  : dist\XYZETONAlbumBackup\XYZETONAlbumBackup.exe
 echo   zip  : %ZIP%
 echo   hash : dist\SHA256.txt
 echo   SHA-256: !HASH!

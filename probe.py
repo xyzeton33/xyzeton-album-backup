@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-iPhone Album Backup - connection / capability check
+XYZETON Album Backup - connection / capability check
 Copyright (C) 2026  XYZETON
 
 This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-Project: https://github.com/XYZETON/iphone-album-backup
+Project: https://github.com/xyzeton33/xyzeton-album-backup
 Developed with assistance from Anthropic Claude.
 probe.py ── 最初に実行する「動作チェック」。ダウンロードは一切しません（約1分）。
   ・PCがiPhoneと会話できるか
