@@ -1,0 +1,113 @@
+# 動作報告のフォーム（動いた／動かなかった）
+# 置き場所: .github/ISSUE_TEMPLATE/2-compat-report.yml
+name: "動作報告 / Compatibility report"
+description: "あなたのiPhone・iOSで動いたか、動かなかったかを教えてください / Tell us whether it worked on your iPhone and iOS"
+title: "[動作報告] iPhone ○○ / iOS ○○"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **「動いた」という報告も歓迎です。** 作者が持っている端末が少ないため、対応範囲の表を埋めるのに使わせていただきます。
+        **Reports that it worked are welcome too.** They help fill in the compatibility table.
+
+        特に知りたいのは **iOS 13〜14** です。iOS 15.8.4 では動き、iOS 12.5.7 では動かないことまで分かっていますが、その間のどこが境目かは分かっていません。
+        We especially want reports for **iOS 13–14**. iOS 15.8.4 works and iOS 12.5.7 does not; the boundary in between is unknown.
+
+        - 現在の対応範囲: [docs/compatibility.md](https://github.com/xyzeton33/xyzeton-album-backup/blob/HEAD/docs/compatibility.md)
+        - エラーで困っている場合は、このフォームではなく「不具合の報告」をお使いください / If you need help with an error, use "Bug report" instead.
+
+  - type: checkboxes
+    id: precheck
+    attributes:
+      label: "確認 / Check"
+      options:
+        - label: "ログやファイル名の中のユーザー名・アルバム名・iPhoneの名前を *** などに置き換えました（ログを貼る場合） / I masked personal names in any log I paste"
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: "ツールのバージョン / App version"
+      description: "画面上部のタイトル横、または右下の「このツールについて」で確認できます / Shown next to the title or in About"
+      placeholder: "例 / e.g. 3.3.1"
+    validations:
+      required: true
+
+  - type: input
+    id: iphone
+    attributes:
+      label: "iPhoneの機種とiOSのバージョン / iPhone model and iOS version"
+      description: "iPhoneの 設定 → 一般 → 情報 で確認できます。iOSは「13.7」のように小数点以下まで書いてください / Settings → General → About. Include the full version, e.g. 13.7"
+      placeholder: "例 / e.g. iPhone 7 / iOS 13.7"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: windows
+    attributes:
+      label: "Windowsのバージョン / Windows version"
+      options:
+        - "Windows 11"
+        - "Windows 10"
+        - "その他 / Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: cable
+    attributes:
+      label: "ケーブル / Cable"
+      options:
+        - "Apple純正 / Apple original"
+        - "純正以外 / Third-party"
+        - "分からない / Not sure"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: "結果 / Result"
+      options:
+        - "最後まで完了した / Completed"
+        - "2 アルバムを確認 で止まった / Stopped at 2 Check albums"
+        - "3 バックアップの途中で止まった / Stopped during 3 Backup"
+        - "1 接続を確認 で止まった / Stopped at 1 Check connection"
+        - "その他 / Other"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: album-check
+    attributes:
+      label: "「2 アルバムを確認」の結果 / Results of 2 Check albums"
+      description: "当てはまるものにチェックしてください（確認していなければ空欄のままで構いません） / Tick what applies; leave blank if not checked"
+      options:
+        - label: "アルバム名と件数が、iPhoneの「アルバム」画面と合っていた / Album names and counts matched the iPhone"
+        - label: "メディアタイプごとの件数が、iPhoneの「メディアタイプ」画面と合っていた / Media type counts matched the iPhone"
+
+  - type: input
+    id: scale
+    attributes:
+      label: "写真のおおよその量 / Approximate library size"
+      description: "分かる範囲で（任意） / Optional"
+      placeholder: "例 / e.g. 約3,000枚・アルバム20件・15GB"
+
+  - type: textarea
+    id: message
+    attributes:
+      label: "止まったときのメッセージ / Message shown when it stopped"
+      description: "止まった場合は、画面に出たメッセージをそのまま貼ってください（例: 「写真/アルバムの表(ZASSET/ZGENERICALBUM)が見つかりません」） / Paste the message as shown"
+
+  - type: textarea
+    id: log
+    attributes:
+      label: "ログ / Log"
+      description: "「ログをコピー」で取得したもの（任意）。**貼る前に、ユーザー名（C:\\Users\\○○）・アルバム名・iPhoneの名前を *** に置き換えてください** / Optional. Mask personal names first."
+      render: text
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: "添付ファイル / Attachments"
+      description: "メッセージに `schema_dump.txt` の場所が書かれていた場合は、そのファイルをここにドラッグしてください。対応を調べるのに一番役立ちます / If a schema_dump.txt was written, drag it here — it helps most"

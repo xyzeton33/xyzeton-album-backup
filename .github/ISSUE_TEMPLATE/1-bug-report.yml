@@ -1,0 +1,131 @@
+# 不具合報告のフォーム
+# 置き場所: .github/ISSUE_TEMPLATE/1-bug-report.yml
+name: "不具合の報告 / Bug report"
+description: "エラーが出る・途中で止まる・結果がおかしい場合 / Errors, stops, or wrong results"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        報告ありがとうございます。個人開発のため、返信に時間がかかることがあります。
+        Thanks for reporting. This is a personal project, so replies may take time.
+
+        **保存先フォルダの外に書き込まれた・写真が意図せず移動/上書きされた場合は、ここに書かないでください。**
+        [非公開の報告窓口](https://github.com/xyzeton33/xyzeton-album-backup/security) から知らせてください。
+        **If files were written or moved outside the destination folder, do not post here.** Use private reporting instead.
+
+  - type: checkboxes
+    id: precheck
+    attributes:
+      label: "確認 / Checks"
+      options:
+        - label: "セキュリティ上の問題ではありません（保存先の外への書き込みなどではない） / This is not a security issue"
+          required: true
+        - label: "ログの中のユーザー名・アルバム名・iPhoneの名前を *** などに置き換えました（ログを貼る場合） / I masked my user name, album names and device name in the log"
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: "ツールのバージョン / App version"
+      description: "画面上部のタイトル横、または右下の「このツールについて」で確認できます / Shown next to the title or in About"
+      placeholder: "例 / e.g. 3.3.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: windows
+    attributes:
+      label: "Windowsのバージョン / Windows version"
+      options:
+        - "Windows 11"
+        - "Windows 10"
+        - "その他 / Other"
+    validations:
+      required: true
+
+  - type: input
+    id: iphone
+    attributes:
+      label: "iPhoneの機種とiOSのバージョン / iPhone model and iOS version"
+      description: "iPhoneの 設定 → 一般 → 情報 で確認できます / Settings → General → About"
+      placeholder: "例 / e.g. iPhone 11 Pro Max / iOS 26.6.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: cable
+    attributes:
+      label: "ケーブル / Cable"
+      options:
+        - "Apple純正 / Apple original"
+        - "純正以外 / Third-party"
+        - "分からない / Not sure"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: usb-port
+    attributes:
+      label: "つなぎ方 / USB connection"
+      options:
+        - "PC本体のポートに直接 / Directly to the PC"
+        - "USBハブ経由 / Through a USB hub"
+        - "分からない / Not sure"
+
+  - type: dropdown
+    id: destination
+    attributes:
+      label: "保存先のドライブ / Destination drive"
+      description: "ドライブを右クリック → プロパティ →「ファイルシステム」で確認できます / Right-click the drive → Properties → File system"
+      options:
+        - "内蔵ドライブ（NTFS） / Internal drive (NTFS)"
+        - "外付けドライブ（NTFS） / External drive (NTFS)"
+        - "外付けドライブ（exFAT・FAT32） / External drive (exFAT, FAT32)"
+        - "ネットワークドライブ / Network drive"
+        - "分からない / Not sure"
+
+  - type: dropdown
+    id: step
+    attributes:
+      label: "どこで起きましたか / Where did it happen?"
+      options:
+        - "起動するとき / On launch"
+        - "1 接続を確認 / 1 Check connection"
+        - "2 アルバムを確認 / 2 Check albums"
+        - "3 バックアップ中 / 3 During backup"
+        - "バックアップ完了後の結果 / In the result after backup"
+        - "その他 / Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: "起きたこと / What happened"
+      description: "画面に出たメッセージがあれば、そのまま書いてください。3のバックアップ中なら [1/4]〜[4/4] のどこだったかも / Include any message shown, and which stage [1/4]–[4/4] if during backup"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "再現手順 / Steps to reproduce"
+      description: "分かる範囲で、短く番号付きで / Short numbered steps, if you know them"
+      placeholder: |
+        1.
+        2.
+        3.
+
+  - type: textarea
+    id: log
+    attributes:
+      label: "ログ / Log"
+      description: "「ログをコピー」で取得したものを貼ってください。**貼る前に、ユーザー名（C:\\Users\\○○）・アルバム名・iPhoneの名前を *** に置き換えてください** / Paste from \"Copy log\". Mask personal names first."
+      render: text
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: "添付ファイル / Attachments"
+      description: "保存先にできた `_メディアタイプ診断.txt`、メッセージに書かれた場所の `schema_dump.txt`、画面のスクリーンショットなどがあれば、ここにドラッグしてください / Drag diagnostic files or screenshots here, if any"
