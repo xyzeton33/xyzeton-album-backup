@@ -21,7 +21,7 @@ Get the latest zip from **Releases** on the right.
 ## ライセンス / License
 
 GPL-3.0-or-later. ソースコードはこのリポジトリと、配布zip内の `source` フォルダにあります。
-企画・画面設計・実機検証は作者（XYZETON）、プログラムの実装は Anthropic Claude が担当しました。
+企画・画面設計・実機検証は作者（XYZETON）、プログラムの実装は Anthropic Claude、デバッグとセキュリティチェックは OpenAI ChatGPT（GPT-5.6 Sol）が担当しました。
 
 本ツールは Apple Inc. とは無関係の個人開発ソフトウェアです。iPhone は Apple Inc. の商標です。
 This is independent software and is not affiliated with, or endorsed by, Apple Inc. iPhone is a trademark of Apple Inc.

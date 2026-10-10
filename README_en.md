@@ -100,12 +100,16 @@ resumes from where it stopped.
 
 ### "Smart App Control blocked an app that might be unsafe"
 
-This is a Windows 11 feature, usually on only after a clean install. It blocks any
-app without a publisher signature. Unlike the "Windows protected your PC" warning,
-there is **no "More info -> Run anyway"**, and you cannot allow a single app.
+This is a Windows 11 feature, usually on only after a clean install. Each time an app
+starts, it asks Microsoft's cloud whether the app is safe; unsigned apps it cannot judge
+are blocked. This tool is not code-signed, so **the first launch may be blocked.**
 
-This tool is not code-signed, so the exe will not start while Smart App Control is on.
-You have two options.
+**First, click OK and start the exe again.** On the author's PC (Smart App Control on),
+the first launch was blocked and the second launch worked, presumably because the cloud
+had finished its check. **This is not guaranteed.**
+
+Unlike the "Windows protected your PC" warning, there is no "More info -> Run anyway",
+and you cannot allow a single app. If it is still blocked, you have two options.
 
 **1. Run from source instead (recommended)**
 
@@ -127,11 +131,20 @@ Recent Windows builds let you turn it back on afterwards, but not on every setup
 It disables a security feature, so the decision is yours.
 
 ### "Could not connect" even though File Explorer shows the iPhone
-This is **not a cable problem**. Explorer uses MTP; this tool uses the same channel as iTunes, so one can
-work while the other does not. Almost always the **Apple Mobile Device Service** is not running:
-Win+R -> `services.msc` -> start **Apple Mobile Device Service** (Startup type: Automatic).
-If it is not listed, install the **Apple Devices** app from the Microsoft Store and open it once.
-Having both iTunes and Apple Devices installed can conflict — keep one and restart the PC.
+Explorer uses MTP; this tool uses the same channel as iTunes, so one can work while the other does not.
+Seeing the iPhone in Explorer does not mean this tool can connect. The tool checks the likely cause and
+shows the matching steps in its error message. Follow the case that matches what you see.
+
+**If the message says "Cause: the Windows service 'Apple Mobile Device Service' is not running."**
+1. Win+R -> `services.msc` -> start **Apple Mobile Device Service** (Startup type: Automatic).
+2. If it is not listed, install the **Apple Devices** app from the Microsoft Store and open it once.
+3. Having both iTunes and Apple Devices installed can conflict — keep one and restart the PC.
+
+**Otherwise**
+1. Unlock the iPhone and tap **Trust**. If the prompt never appeared, unplug and replug the cable.
+2. Try an **Apple original USB cable**. In one case the iPhone was visible in File Explorer but this tool
+   could not connect until a genuine cable was used (see Requirements).
+3. Try a different USB port on the PC itself. USB hubs can be unreliable.
 
 ### HEIC files will not open
 Install "HEIF Image Extensions" from the Microsoft Store.
@@ -150,6 +163,7 @@ Python 3.12 is required (3.13+ lacks Windows wheels for a dependency). `build.ba
 |---|---|
 | XYZETON (author) | Concept, UI design, real-device testing, finding bugs, feature requests, release |
 | Anthropic Claude | All of the implementation (database parsing, USB transfer, error handling, tests, build) |
+| OpenAI ChatGPT (GPT-5.6 Sol) | Debugging, security review |
 
 The author is a graphic designer, not a programmer.
 
@@ -182,11 +196,11 @@ Run it from there if the exe is blocked on your machine (see above).
 
 The tool's own code only connects to the Apple service on this PC (`127.0.0.1:27015`, Apple Mobile Device Service).
 It has no code that sends photos, album names, or logs to the internet.
-Note: a full run with the network disconnected (including third-party libraries) is still being verified.
+A full run with the network disconnected (airplane mode) was confirmed to complete, from connection to the end of the backup (2026-09-29, v3.3.1).
 
 ## Author & License
 Author: **XYZETON**
 GPL-3.0-or-later. See LICENSE and THIRD_PARTY_NOTICES.md.
-Concept, UI design and real-device testing by the author; all implementation by Anthropic Claude (see "Who built this").
+Concept, UI design and real-device testing by the author; all implementation by Anthropic Claude; debugging and security review by OpenAI ChatGPT, using GPT-5.6 Sol (see "Who built this").
 
 This is independent software and is not affiliated with, or endorsed by, Apple Inc. iPhone is a trademark of Apple Inc.

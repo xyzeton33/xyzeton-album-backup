@@ -31,7 +31,7 @@ XYZETON Album Backup — Copyright (C) 2026 XYZETON
 iOS のアップデートにより予告なく動作しなくなる可能性があります。無保証・自己責任でご利用ください。
 
 ## 開発について
-企画・画面設計・実機検証は作者（XYZETON）が、プログラムの実装は Anthropic Claude が担当しました。
+企画・画面設計・実機検証は作者（XYZETON）が、プログラムの実装は Anthropic Claude が、デバッグとセキュリティチェックは OpenAI ChatGPT（GPT-5.6 Sol）が担当しました。
 
 ## 商標
 本ツールは Apple Inc. とは無関係の個人開発ソフトウェアです。iPhone は Apple Inc. の商標です。
