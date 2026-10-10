@@ -1,0 +1,13 @@
+# Issue作成画面の選択肢を設定するファイル
+# 置き場所: .github/ISSUE_TEMPLATE/config.yml
+blank_issues_enabled: false
+contact_links:
+  - name: "🔒 セキュリティ上の問題 / Security issue"
+    url: https://github.com/xyzeton33/xyzeton-album-backup/security
+    about: "保存先の外への書き込み・写真の意図しない移動や上書きなど。公開Issueではなく、ここから非公開で報告してください。 / Report privately here, not as a public issue."
+  - name: "📖 使い方・よくある質問 / FAQ"
+    url: https://github.com/xyzeton33/xyzeton-album-backup/blob/HEAD/README_ja.md
+    about: "接続できない・容量・「(応答なし)」などは、まず説明書の「よくある質問」をご覧ください。 / English: README_en.md"
+  - name: "📋 対応範囲と既知の制限 / Compatibility"
+    url: https://github.com/xyzeton33/xyzeton-album-backup/blob/HEAD/docs/compatibility.md
+    about: "確認済み・対象外・未確認の一覧です。報告の前にご確認ください。 / What is tested, unsupported, or untested."
