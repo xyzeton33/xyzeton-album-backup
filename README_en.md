@@ -50,7 +50,8 @@ Nothing to install — just extract and run.
 1. **Right-click the zip → "Extract All"**.
    > ⚠ Do **not** double-click the exe from inside the zip preview. Windows would run it from a temporary
    > folder, and the album database (several GB) would have to be fetched again every time.
-2. Move the extracted **`XYZETONAlbumBackup`** folder wherever you like — e.g. `D:\XYZETONAlbumBackup`.
+2. Extracting creates a folder with the version in its name, such as `XYZETONAlbumBackup_v3.3.1`.
+   Move it wherever you like — e.g. `D:\XYZETONAlbumBackup`. You can rename the folder.
    - The folder will hold the iPhone album database (**several GB**; ~7 GB for 84,000 items), so pick a drive with room.
    - Keeping it in Downloads works, but you will lose the database when you clean that folder out.
    - `C:\Program Files` works too (if the folder is not writable the app stores its data under your user profile), but it is not recommended.
@@ -100,35 +101,35 @@ resumes from where it stopped.
 
 ### "Smart App Control blocked an app that might be unsafe"
 
-This is a Windows 11 feature, usually on only after a clean install. Each time an app
-starts, it asks Microsoft's cloud whether the app is safe; unsigned apps it cannot judge
-are blocked. This tool is not code-signed, so **the first launch may be blocked.**
+This is a Windows 11 feature, usually on only after a clean install. Each time an app,
+or a component it loads (such as a DLL), runs, it asks Microsoft's cloud whether it is safe;
+unsigned files it cannot judge are blocked. This tool is not code-signed, and some components
+of the libraries inside it are unsigned too.
 
 **First, click OK and start the exe again.** On the author's PC (Smart App Control on),
-the first launch was blocked and the second launch worked, presumably because the cloud
-had finished its check. **This is not guaranteed.**
+the first launch was blocked and the second launch worked. **Only the launch was confirmed.**
+A component may still be blocked later, while connecting to the iPhone or during the backup
+(Windows then shows a message such as "Part of this app has been blocked").
 
-Unlike the "Windows protected your PC" warning, there is no "More info -> Run anyway",
-and you cannot allow a single app. If it is still blocked, you have two options.
+There is no "More info -> Run anyway", and you cannot allow a single app.
+If it keeps blocking the tool, you have two options.
 
-**1. Run from source instead (recommended)**
-
-The zip contains a `source` folder with the full source code. With Python 3.12:
-
-```
-py -3.12 -m pip install pymobiledevice3==11.3.1 customtkinter==6.0.0
-py -3.12 gui.py
-```
-
-No exe is involved, so nothing is blocked.
-
-**2. Turn Smart App Control off**
+**1. Turn Smart App Control off**
 
 Settings -> Privacy & security -> Windows Security ->
 App & browser control -> Smart App Control settings -> Off
 
 Recent Windows builds let you turn it back on afterwards, but not on every setup.
 It disables a security feature, so the decision is yours.
+
+**2. Use another PC where Smart App Control is off**
+
+> **Running from source is unlikely to help.**
+> On the author's machine, Windows blocked Python (python.exe) from loading a library component
+> (`_raw_aes.pyd` from pycryptodome), with "Bad Image" and error status 0xc0e90002 (2026-10-12).
+> That message is what a Smart App Control block looks like. The source version uses the same libraries
+> as the exe, so it is likely to be blocked the same way (running from source on a PC with
+> Smart App Control on has not been tested).
 
 ### "Could not connect" even though File Explorer shows the iPhone
 Explorer uses MTP; this tool uses the same channel as iTunes, so one can work while the other does not.
@@ -151,11 +152,13 @@ Install "HEIF Image Extensions" from the Microsoft Store.
 
 ## Advanced (run from source)
 ```
-py -3.12 -m pip install pymobiledevice3 customtkinter
+py -3.12 -m pip install pymobiledevice3==11.3.1 customtkinter==6.0.0 -c constraints.txt
 py -3.12 gui.py                                   # GUI
 py -3.12 album_export.py --lang en --out E:\iPhoneAlbums
 ```
-Python 3.12 is required (3.13+ lacks Windows wheels for a dependency). `build.bat` builds the exe.
+`-c constraints.txt` installs the exact library versions the tool was tested with (the file is in the `source` folder).
+Python 3.12 is required (3.13+ lacks Windows wheels for a dependency). The last 3.12 release with a
+Windows installer is **3.12.10** ("Windows installer (64-bit)" on python.org). `build.bat` builds the exe.
 
 ## Who built this
 
@@ -178,7 +181,8 @@ The tool is free. There is an optional way to support development, but **it chan
 nothing about what you get** — no individual support, no warranty, no special build.
 The link may move, so the current one is kept in this README.
 
-[support link]
+Not ready yet. It will be added to the README on GitHub:
+https://github.com/xyzeton33/xyzeton-album-backup
 
 ## Bundled source code
 
@@ -187,10 +191,12 @@ The tool is GPL-3.0, so the full source is included in the `source` folder of th
 ```
 source\
 ├ album_export.py  gui.py  probe.py  conftest.py  build.bat
+├ constraints.txt  (tested library versions)
 └ tests\           (regression tests)
 ```
 
-Run it from there if the exe is blocked on your machine (see above).
+With Python 3.12 you can run it from there without the exe (see "Advanced").
+This is unlikely to get around Smart App Control, though (see above).
 
 ## Network
 
@@ -199,7 +205,7 @@ It has no code that sends photos, album names, or logs to the internet.
 A full run with the network disconnected (airplane mode) was confirmed to complete, from connection to the end of the backup (2026-09-29, v3.3.1).
 
 ## Author & License
-Author: **XYZETON**
+Author: **XYZETON** (X: [@XYZETON](https://x.com/XYZETON) )
 GPL-3.0-or-later. See LICENSE and THIRD_PARTY_NOTICES.md.
 Concept, UI design and real-device testing by the author; all implementation by Anthropic Claude; debugging and security review by OpenAI ChatGPT, using GPT-5.6 Sol (see "Who built this").
 

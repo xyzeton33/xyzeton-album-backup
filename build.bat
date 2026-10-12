@@ -16,7 +16,7 @@ REM ============================================================
 echo ------------------------------------------------------------
 echo [0/6] Checking that every required file is here...
 set MISSING=
-for %%F in (gui.py album_export.py probe.py conftest.py LICENSE THIRD_PARTY_NOTICES.md README_ja.md README_en.md) do (
+for %%F in (gui.py album_export.py probe.py conftest.py constraints.txt LICENSE THIRD_PARTY_NOTICES.md README_ja.md README_en.md) do (
   if not exist "%%F" (
     echo   MISSING: %%F
     set MISSING=1
@@ -61,11 +61,14 @@ REM --no-cache-dir: a locked/unreadable cached wheel causes "Permission denied".
 python -m pip install --no-cache-dir --upgrade pip >nul
 REM Pin the versions that were verified on a real iPhone, so a rebuild months
 REM from now produces the same behaviour. Bump these only after re-testing.
-python -m pip install --no-cache-dir pymobiledevice3==11.3.1 customtkinter==6.0.0 pyinstaller==6.22.2
+REM constraints.txt pins every indirect dependency too. Without it, a rebuild
+REM silently picked up 19 newer packages (2026-10-12), and Windows blocked one
+REM of the new files (pycryptodome _raw_aes.pyd, 0xc0e90002 = Smart App Control).
+python -m pip install --no-cache-dir pymobiledevice3==11.3.1 customtkinter==6.0.0 pyinstaller==6.22.2 -c constraints.txt
 if errorlevel 1 goto :err
 
 echo [2.5/6] Running device-free tests (pytest)...
-python -m pip install --no-cache-dir pytest >nul
+python -m pip install --no-cache-dir pytest -c constraints.txt >nul
 REM Collect every test_*.py automatically. pytest skips dist, build and .venv
 python -m pytest -q -rs > "%TEMP%\iab_pytest_result.txt" 2>&1
 set PYTEST_RC=%errorlevel%
@@ -114,6 +117,7 @@ copy /y gui.py          dist\XYZETONAlbumBackup\source\ >nul
 copy /y probe.py        dist\XYZETONAlbumBackup\source\ >nul
 copy /y conftest.py     dist\XYZETONAlbumBackup\source\ >nul
 copy /y build.bat       dist\XYZETONAlbumBackup\source\ >nul
+copy /y constraints.txt dist\XYZETONAlbumBackup\source\ >nul
 copy /y test_*.py       dist\XYZETONAlbumBackup\source\tests\ >nul
 copy /y LICENSE dist\XYZETONAlbumBackup\ >nul
 copy /y README_ja.md dist\XYZETONAlbumBackup\ >nul
