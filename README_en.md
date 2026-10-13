@@ -181,8 +181,8 @@ The tool is free. There is an optional way to support development, but **it chan
 nothing about what you get** — no individual support, no warranty, no special build.
 The link may move, so the current one is kept in this README.
 
-Not ready yet. It will be added to the README on GitHub:
-https://github.com/xyzeton33/xyzeton-album-backup
+Optional "support" editions (JPY 200 / 500 / 3,000) are on BOOTH. They contain exactly the same zip as the free one:
+https://xyzeton.booth.pm/items/8986554
 
 ## Bundled source code
 

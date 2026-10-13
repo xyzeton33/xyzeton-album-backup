@@ -19,6 +19,8 @@ Get the latest zip from **Releases** on the right.
 
 インストール不要です。zipを展開して `XYZETONAlbumBackup.exe` を実行します。
 
+BOOTH でも配布しています（無料版と、中身が同じ任意の支援版）：https://xyzeton.booth.pm/items/8986554
+
 ## ライセンス / License
 
 GPL-3.0-or-later. ソースコードはこのリポジトリと、配布zip内の `source` フォルダにあります。
