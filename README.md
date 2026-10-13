@@ -10,6 +10,7 @@ Backs up your iPhone photos to Windows, keeping your album structure as folders.
 - **[日本語の説明書（README_ja.md）](README_ja.md)**
 - **[English (README_en.md)](README_en.md)**
 - [対応範囲と既知の制限（docs/compatibility.md）](docs/compatibility.md)
+- [開発の経緯（Zenn）](https://zenn.dev/xyzeton/articles/77d4842c5bb00d)
 
 ## ダウンロード / Download
 
