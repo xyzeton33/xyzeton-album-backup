@@ -28,7 +28,7 @@ import customtkinter as ctk
 
 import album_export as engine
 
-VERSION = "3.3.1"
+VERSION = "3.3.2"
 AUTHOR = "XYZETON"
 REPO = "https://github.com/xyzeton33/xyzeton-album-backup"
 AUTHOR = "XYZETON"
@@ -37,8 +37,8 @@ SETTINGS = "_settings.json"
 
 STR = {
  "title": ("XYZETON アルバムバックアップ", "XYZETON Album Backup"),
- "tagline": ("iPhoneのアルバム構成をそのまま、パソコンのフォルダに保存します。上から順に進めてください。",
-             "Backs up your iPhone albums as folders on this PC, keeping the same structure. Work top to bottom."),
+ "tagline": ("iPhoneのアルバム構成をそのまま、パソコンのフォルダに保存します。1 → 2 → 3 の順に進めてください。",
+             "Backs up your iPhone albums as folders on this PC, keeping the same structure. Follow steps 1 → 2 → 3."),
  "dest": ("保存先", "Save to"), "dest_ph": ("例: E:\\iPhoneAlbums", "e.g. E:\\iPhoneAlbums"), "browse": ("フォルダを選ぶ", "Choose folder…"),
  "step1": ("接続を確認", "Check connection"), "step2": ("アルバムを確認", "Review albums"), "step3": ("バックアップを始める", "Start backup"),
  "stop": ("中止", "Stop"), "stopping": ("中止しています…", "Stopping…"),
@@ -59,8 +59,8 @@ STR = {
                  "This downloads all photo files.\nIt can take hours and tens to hundreds of GB.\n\n• Prevent the PC from sleeping\n• Keep the iPhone unlocked and connected\n\nStart now?"),
  "confirm_stop": ("処理を中止しますか？\n\n取得済みのファイルは残り、次回は続きから再開できます。", "Stop now?\n\nDownloaded files are kept; the next run resumes from here."),
  "running": ("{}を実行中…", "{}…"), "finished": ("{}が終わりました", "{} finished"),
- "stopped_log": ("\n■ 中止しました。取得済みのファイルはそのまま残っています。\n  続きから再開するには、もう一度「3 バックアップを始める」を押してください。\n",
-                 "\n■ Stopped. Downloaded files are kept.\n  Press \"3 Start backup\" again to resume.\n"),
+ "stopped_log": ("\n■ 中止しました。取得済みのファイルはそのまま残っています。\n  続きから再開するには、もう一度「{}」を押してください。\n",
+                 "\n■ Stopped. Downloaded files are kept.\n  Press \"{}\" again to resume.\n"),
  "stopped": ("中止しました（続きから再開できます）", "Stopped (you can resume)"),
  "lost": ("iPhoneとの接続が切れました（つなぎ直して3を押すと続きから）", "Lost connection (reconnect and press 3 to resume)"),
  "local_io": ("保存先に書き込めません（空き容量や権限を確認してください）", "Cannot write to the destination (check free space and permissions)"),
@@ -635,6 +635,10 @@ class App(ctk.CTk):
         engine.CANCEL.clear()
         self.run_started = time.time()
         self.running_step = step
+        # 中止したときに「どのボタンを押せば続きから再開できるか」を、押したボタンに合わせて出す
+        # （以前は「2 アルバムを確認」の途中で止めても「3 バックアップを始める」と案内していた）
+        n = step if step in (1, 2, 3) else 3
+        resume_button = f"{n} {self.S(f'step{n}')}"
         # 1・2・3 のどれを押しても、進捗と結果は詳細ログに出る。
         # 毎回「詳細ログ」を手で開くのは手間なので、実行開始時に自動で開く。
         self._toggle_log(True)
@@ -650,7 +654,7 @@ class App(ctk.CTk):
                 asyncio.run(coro_factory())
                 self.q.put(("__done__", self.S("finished").format(label), label == self.S("label_run")))
             except engine.Cancelled:
-                self.q.put(self.S("stopped_log"))
+                self.q.put(self.S("stopped_log").format(resume_button))
                 self.q.put(("__done__", self.S("stopped")))
             except engine.LocalIOError as e:
                 self.q.put(f"\n💾 {e}\n")

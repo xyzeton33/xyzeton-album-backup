@@ -395,14 +395,66 @@ def _gmtime_or_none(ts):
         return None
 
 
+def _is_virtual_table_sql(sql):
+    return isinstance(sql, str) and sql.lstrip().upper().startswith("CREATE VIRTUAL TABLE")
+
+
+def _plain_tables(cur):
+    """Photos.sqlite の通常の表の名前（仮想表は除く）。
+
+    仮想表（FTS5 の全文検索表など）は、列名を調べるだけでも作成時のオプションを解釈する。
+    iOS 27.0.1 の Photos.sqlite には、配布版に同梱した SQLite が知らないオプション
+    （contentless_delete）の仮想表があり、PRAGMA table_info で解析全体が止まった。
+    アルバムの解析に仮想表は使わないので、最初から候補に入れない。
+
+    仮想表に付属する内部表（FTS5 の ZXXX_data / _idx / _docsize / _config など）も除く。
+    中身は検索用のデータで、件数が多いと読み込みに時間とメモリを使うため（ChatGPTレビューの指摘）。
+    ・SQLite 3.37 以降: PRAGMA table_list の種類が 'table' 以外（'shadow' / 'virtual'）を除く
+    ・どの版でも: 仮想表の名前＋"_" で始まる表を除く（仮想表のモジュールを手元の SQLite が持たず、
+      'shadow' と判定されない場合のため）
+    sqlite_ で始まる SQLite 自身の表も除く。
+    """
+    rows = cur.execute("SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()
+    vtab_prefixes = [name.casefold() + "_" for name, sql in rows
+                     if isinstance(name, str) and _is_virtual_table_sql(sql)]
+    try:
+        # 古い SQLite は知らない PRAGMA を無視して0行を返す（その場合は下の判定だけになる）
+        kinds = {r[1]: r[2] for r in cur.execute("PRAGMA main.table_list").fetchall()}
+    except sqlite3.Error:
+        kinds = {}
+
+    def plain(name, sql):
+        if not isinstance(name, str) or name.casefold().startswith("sqlite_"):
+            return False
+        if _is_virtual_table_sql(sql) or kinds.get(name, "table") != "table":
+            return False
+        return not any(name.casefold().startswith(p) for p in vtab_prefixes)
+
+    return [name for name, sql in rows if plain(name, sql)]
+
+
+def _table_cols(cur, name):
+    """表の列名。外部由来の表が読めなくても全体を止めず、空リストを返す"""
+    try:
+        return [r[1] for r in cur.execute(f'PRAGMA table_info({_qi(name)})').fetchall()]
+    except sqlite3.Error:
+        return []
+
+
 def dump_schema(cur, path):
     """検出失敗時の診断用: Z_/ZASSET/ZGENERICALBUM 系の表と列を書き出す"""
     with open(path, "w", encoding="utf-8") as f:
-        names = [r[0] for r in cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()]
-        for name in names:
+        rows = cur.execute("SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()
+        for name, sql in rows:
+            if not isinstance(name, str):
+                continue
             u = name.upper()
+            if _is_virtual_table_sql(sql):
+                # 中身は読まない（読もうとすると上と同じ理由で止まることがある）
+                f.write(f"{name} (virtual): {' '.join(str(sql).split())[:300]}\n")
+                continue
             if u.startswith("Z_") or "ASSET" in u or "ALBUM" in u:
-                cols = [r[1] for r in cur.execute(f'PRAGMA table_info({_qi(name)})')]
+                cols = _table_cols(cur, name)
                 try:
                     n = cur.execute(f'SELECT COUNT(*) FROM {_qi(name)}').fetchone()[0]
                 except Exception:
@@ -425,16 +477,18 @@ def find_join_table(cur, cols):
     user_albums = {r[0] for r in cur.execute(
         f"SELECT Z_PK FROM ZGENERICALBUM WHERE ZKIND={KIND_USER_ALBUM}").fetchall()}
 
-    names = [r[0] for r in cur.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'Z%'").fetchall()]
+    names = [n for n in _plain_tables(cur) if n.upper().startswith("Z")]
     cands = []
     for name in names:
         if name in ("ZASSET", "ZGENERICALBUM"):
             continue
-        cs = [c for c in cols(name) if not c.startswith("Z_FOK")]
+        cs = [c for c in cols(name) if isinstance(c, str) and not c.startswith("Z_FOK")]
         if not (2 <= len(cs) <= 4):
             continue
-        rows = cur.execute(f'SELECT {", ".join(_qi(c) for c in cs)} FROM {_qi(name)}').fetchall()
+        try:
+            rows = cur.execute(f'SELECT {", ".join(_qi(c) for c in cs)} FROM {_qi(name)}').fetchall()
+        except sqlite3.Error:
+            continue
         if len(rows) < 3:
             continue
         for ai, ac in enumerate(cs):
@@ -476,8 +530,8 @@ def parse_albums(db_path):
     con = sqlite3.connect(db_path)  # ローカルコピーなのでRWで開きWALを適用
     try:
         cur = con.cursor()
-        cols = lambda tbl: [r[1] for r in cur.execute(f'PRAGMA table_info({_qi(tbl)})').fetchall()]
-        tables = {r[0] for r in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        cols = lambda tbl: _table_cols(cur, tbl)
+        tables = set(_plain_tables(cur))
         dump_path = os.path.join(app_dir(), "schema_dump.txt")
 
         if "ZASSET" not in tables or "ZGENERICALBUM" not in tables:

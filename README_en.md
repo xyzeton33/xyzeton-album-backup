@@ -31,7 +31,8 @@ E:\iPhoneAlbums\
  └─ _cache_DCIM\        the actual files — do not delete (album folders are hard links into it)
 ```
 
-> **Tested on**: iPhone 11 Pro Max / iOS 26.6.1 / Windows 10 and 11 / genuine Apple USB cable / 84,000 items (207 GB).
+> **Tested on**: iPhone 11 Pro Max / iOS 26.6.2 (Windows 10 and 11) and iOS 27.0.1 (Windows 11) / genuine Apple USB cable / 75,627 files on the device (164.8 GB, measured on iOS 27.0.1).
+> **iOS 27 requires v3.3.2 or later** (v3.3.1 stops while analyzing the album database; see docs/compatibility.md).
 > Other setups are untested. An iOS update may break it. No warranty — use at your own risk.
 
 ## Requirements
@@ -50,7 +51,7 @@ Nothing to install — just extract and run.
 1. **Right-click the zip → "Extract All"**.
    > ⚠ Do **not** double-click the exe from inside the zip preview. Windows would run it from a temporary
    > folder, and the album database (several GB) would have to be fetched again every time.
-2. Extracting creates a folder with the version in its name, such as `XYZETONAlbumBackup_v3.3.1`.
+2. Extracting creates a folder with the version in its name, such as `XYZETONAlbumBackup_v3.3.2`.
    Move it wherever you like — e.g. `D:\XYZETONAlbumBackup`. You can rename the folder.
    - The folder will hold the iPhone album database (**several GB**; ~7 GB for 84,000 items), so pick a drive with room.
    - Keeping it in Downloads works, but you will lose the database when you clean that folder out.
