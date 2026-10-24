@@ -28,7 +28,7 @@ E:\iPhoneAlbums\
  ├─ _Unsorted\          photos that are in no album, by year\year-month
  ├─ _Removed\           (optional) photos deleted or removed from albums on the iPhone
  ├─ _album_state.json   used to follow album renames — do not delete
- └─ _cache_DCIM\        the actual files — do not delete (album folders are hard links into it)
+ └─ _cache_DCIM\        the actual files — do not delete (album folders are hard links into it; created as a hidden folder since v3.3.3)
 ```
 
 > **Tested on**: iPhone 11 Pro Max / iOS 26.6.2 (Windows 10 and 11) and iOS 27.0.1 (Windows 11) / genuine Apple USB cable / 75,627 files on the device (164.8 GB, measured on iOS 27.0.1).
@@ -51,7 +51,7 @@ Nothing to install — just extract and run.
 1. **Right-click the zip → "Extract All"**.
    > ⚠ Do **not** double-click the exe from inside the zip preview. Windows would run it from a temporary
    > folder, and the album database (several GB) would have to be fetched again every time.
-2. Extracting creates a folder with the version in its name, such as `XYZETONAlbumBackup_v3.3.2`.
+2. Extracting creates a folder with the version in its name, such as `XYZETONAlbumBackup_v3.3.3`.
    Move it wherever you like — e.g. `D:\XYZETONAlbumBackup`. You can rename the folder.
    - The folder will hold the iPhone album database (**several GB**; ~7 GB for 84,000 items), so pick a drive with room.
    - Keeping it in Downloads works, but you will lose the database when you clean that folder out.
@@ -147,6 +147,10 @@ shows the matching steps in its error message. Follow the case that matches what
 2. Try an **Apple original USB cable**. In one case the iPhone was visible in File Explorer but this tool
    could not connect until a genuine cable was used (see Requirements).
 3. Try a different USB port on the PC itself. USB hubs can be unreliable.
+
+### Media type counts / `_cache_DCIM`
+- As in the Photos app, a photo goes into **every media type it belongs to** (e.g. a front-camera Live Photo is in both Live Photos and Selfies). Up to v3.3.2 each photo went into one type only, so some counts were lower than in the Photos app. Hard links mean this uses no extra space.
+- To hide `_cache_DCIM` in File Explorer: right-click it > Properties > check "Hidden" > choose **"Apply changes to this folder only"**. Applying it to subfolders and files would also hide the photos in your album folders, because hard links share attributes. New backups made with v3.3.3 or later create it hidden.
 
 ### HEIC files will not open
 Install "HEIF Image Extensions" from the Microsoft Store.

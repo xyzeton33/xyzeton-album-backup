@@ -28,7 +28,7 @@ import customtkinter as ctk
 
 import album_export as engine
 
-VERSION = "3.3.2"
+VERSION = "3.3.3"
 AUTHOR = "XYZETON"
 REPO = "https://github.com/xyzeton33/xyzeton-album-backup"
 AUTHOR = "XYZETON"

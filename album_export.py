@@ -395,6 +395,32 @@ def _gmtime_or_none(ts):
         return None
 
 
+FILE_ATTRIBUTE_HIDDEN = 0x2
+INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
+
+
+def _hide_folder_only(path):
+    """フォルダ自身にだけ Windows の「隠し」属性を付ける（中のファイルには付けない）。
+
+    _cache_DCIM の写真は、アルバムのフォルダの写真とハードリンクで同じ実体を共有している。
+    ハードリンクは属性も共有するので、中のファイルまで隠すとアルバム側の写真も隠れてしまう。
+    そのため、このツールが今作ったばかりのフォルダ（リンクの差し替えが起きていないもの）にだけ使う。
+    失敗しても動作には関係ないので、例外は外へ出さない。Windows 以外では何もしない。
+    """
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        k32.GetFileAttributesW.restype = ctypes.c_uint32
+        attrs = k32.GetFileAttributesW(str(path))
+        if attrs == INVALID_FILE_ATTRIBUTES:
+            return False
+        return bool(k32.SetFileAttributesW(str(path), attrs | FILE_ATTRIBUTE_HIDDEN))
+    except Exception:
+        return False
+
+
 def _is_virtual_table_sql(sql):
     return isinstance(sql, str) and sql.lstrip().upper().startswith("CREATE VIRTUAL TABLE")
 
@@ -685,8 +711,7 @@ def parse_albums(db_path):
         for d, fn, kind, sub, pb, dep, cam in cur.execute(
                 f"SELECT a.ZDIRECTORY, a.ZFILENAME, {sel}, {cam_col} FROM ZASSET a {cam_join} WHERE {a_ok}").fetchall():
             if d and fn:
-                mtype = classify_media(kind, sub, pb, dep, cam, fn)
-                media[f"{d}/{fn}"] = mtype
+                media[f"{d}/{fn}"] = classify_media_all(kind, sub, pb, dep, cam, fn)
                 key = (kind, sub, pb, dep, cam, os.path.splitext(fn)[1].upper())
                 raw_combo[key] = raw_combo.get(key, 0) + 1
         return albums, all_files, dates, album_keys, media, raw_combo
@@ -694,32 +719,50 @@ def parse_albums(db_path):
         con.close()
 
 
-def classify_media(kind, subtype, playback, depth, camdev, filename):
-    """ZASSET等の値からメディアタイプ名を返す。該当なしは None（＝ふつうの写真）。
+def classify_media_all(kind, subtype, playback, depth, camdev, filename):
+    """ZASSET等の値から、当てはまるメディアタイプを全部返す（MEDIA_TYPES の順）。該当なしは []。
+
+    iPhoneの写真アプリは、1枚を複数のメディアタイプに重ねて表示する。
+    v3.3.2 までは1種類だけに入れていたため、件数が写真アプリと合わなかった（GitHub Issue #1）。
+    実機で重なりを確認したもの（2026-10）:
+      ・Live Photos と ポートレート（奥行き情報つきの Live。iPhone 17 Pro Max / iOS 27.0.1）
+      ・セルフィー と Live Photos／ポートレート（前面カメラ。iPhone 11 Pro Max / iOS 27.0.1）
+      ・ビデオ と 画面録画（iPhone 11 Pro Max / iOS 27.0.1）
+    スローモーション・タイムラプスがビデオにも入るかは未確認（作者の端末に該当が無い）。
+    前面カメラの動画がセルフィーに入るかも未確認のため、動画はセルフィーに入れない。
+
     kind: 0=写真 1=動画 / subtype: 1=パノラマ 2=Live 10=スクショ 101=タイムラプス 102=スロー 103=画面録画
     playback: 2=アニメーション(GIF) 3=Live / depth: 1=ポートレート / camdev: 1=前面カメラ"""
     ext = os.path.splitext(filename or "")[1].lower()
+    found = set()
     if kind == 1:
+        found.add("ビデオ")
         if subtype == 103:
-            return "画面録画"
-        if subtype == 102:
-            return "スローモーション"
-        if subtype == 101:
-            return "タイムラプス"
-        return "ビデオ"
-    if subtype == 10:
-        return "スクリーンショット"
-    if subtype == 1:
-        return "パノラマ"
-    if playback == 2 or ext == ".gif":
-        return "アニメーション"
-    if depth == 1:
-        return "ポートレート"
-    if subtype == 2 or playback == 3:
-        return "Live Photos"
-    if camdev == 1:
-        return "セルフィー"
-    return None
+            found.add("画面録画")
+        elif subtype == 102:
+            found.add("スローモーション")
+        elif subtype == 101:
+            found.add("タイムラプス")
+    else:
+        if subtype == 10:
+            found.add("スクリーンショット")
+        if subtype == 1:
+            found.add("パノラマ")
+        if playback == 2 or ext == ".gif":
+            found.add("アニメーション")
+        if depth == 1:
+            found.add("ポートレート")
+        if subtype == 2 or playback == 3:
+            found.add("Live Photos")
+        if camdev == 1:
+            found.add("セルフィー")
+    return [k for k in MEDIA_TYPES if k in found]
+
+
+def classify_media(kind, subtype, playback, depth, camdev, filename):
+    """当てはまるメディアタイプのうち先頭の1つ（v3.3.2 までの判定と同じ結果）。該当なしは None"""
+    found = classify_media_all(kind, subtype, playback, depth, camdev, filename)
+    return found[0] if found else None
 
 
 def internal_names():
@@ -1854,8 +1897,8 @@ async def run(args):
         for p in sorted(albums):
             log(f"     📁 {p}  ({len(albums[p])})")
         counts = {}
-        for mtype in media.values():
-            if mtype:
+        for types in media.values():
+            for mtype in types or ():
                 counts[mtype] = counts.get(mtype, 0) + 1
         log(t("   メディアタイプ（iPhoneの『メディアタイプ』画面の件数と見比べてください）", "   Media types (compare with the counts in the iPhone \"Media Types\" screen)"))
         for k in MEDIA_TYPES:
@@ -1868,7 +1911,7 @@ async def run(args):
             f.write(t("種類判定の元データ（件数が iPhone と合わない時に、このファイルを共有してください）\n", "Raw values used for media-type detection (share this file if the counts differ from the iPhone)\n"))
             f.write("ZKIND\tZKINDSUBTYPE\tZPLAYBACKSTYLE\tZDEPTHTYPE\tZCAMERACAPTUREDEVICE\t" + t("拡張子\t件数\t判定", "ext\tcount\ttype") + "\n")
             for key, n in sorted(raw_combo.items(), key=lambda kv: -kv[1]):
-                f.write("\t".join(str(k) for k in key) + f"\t{n}\t{classify_media(*key[:5], 'x' + key[5].lower()) or t('写真', 'Photo')}\n")
+                f.write("\t".join(str(k) for k in key) + f"\t{n}\t{', '.join(media_name(k) for k in classify_media_all(*key[:5], 'x' + key[5].lower())) or t('写真', 'Photo')}\n")
         if args.list:
             if getattr(args, "gui", False):
                 log(t("\nアルバムの一覧はここまでです。内容に問題がなければ「3 バックアップを始める」を押してください。", "\nThat is the album list. If it looks right, press \"3 Start backup\"."))
@@ -1878,7 +1921,10 @@ async def run(args):
 
         out = os.path.abspath(args.out)
         cache = os.path.abspath(args.cache or os.path.join(out, "_cache_DCIM"))
+        cache_is_new = not os.path.lexists(cache)
         os.makedirs(cache, exist_ok=True)
+        if cache_is_new and not args.cache:
+            _hide_folder_only(cache)
         if os.path.splitdrive(out)[0].upper() != os.path.splitdrive(cache)[0].upper():
             log(t("   ⚠ 出力先とキャッシュが別ドライブ: ハードリンク不可のためコピーになり容量を余分に使います",
                   "   ⚠ Destination and cache are on different drives: hard links are impossible, files will be copied"))
@@ -1926,7 +1972,7 @@ async def run(args):
             unsorted_dirs.add(d)
             if not place_asset(rel, cache, d, dates, not args.no_date_prefix, placed, out_root=out):
                 missing += 1
-        # メディアタイプ別フォルダ（iPhoneと同じ分類。1つの写真は1種類のみ。ハードリンクなので容量は増えない）
+        # メディアタイプ別フォルダ（iPhoneと同じく、当てはまる種類すべてに入れる。ハードリンクなので容量は増えない）
         mt = getattr(args, "media_types", "all")
         if isinstance(mt, str):
             wanted = set(MEDIA_TYPES) if mt == "all" else set() if mt == "none" else {x.strip() for x in mt.split(",")}
@@ -1937,15 +1983,19 @@ async def run(args):
             n_media = 0
             for rel in sorted(all_files):
                 _check_cancel()
-                mtype = media.get(rel)
-                if not mtype or mtype not in wanted:
+                types = [k for k in (media.get(rel) or ()) if k in wanted]
+                if not types:
                     continue
                 ts = dates.get(rel)
                 tm = _gmtime_or_none(ts) if ts else None
                 sub = time.strftime("%Y/%Y-%m", tm) if tm else sp("nodate")
-                d = os.path.join(out, sp("media"), safe(media_name(mtype)), *sub.split("/"))
-                media_dirs.add(d)
-                if place_asset(rel, cache, d, dates, not args.no_date_prefix, placed, out_root=out):
+                ok_any = False
+                for mtype in types:
+                    d = os.path.join(out, sp("media"), safe(media_name(mtype)), *sub.split("/"))
+                    media_dirs.add(d)
+                    if place_asset(rel, cache, d, dates, not args.no_date_prefix, placed, out_root=out):
+                        ok_any = True
+                if ok_any:
                     n_media += 1
             names = ", ".join(media_name(k) for k in MEDIA_TYPES if k in wanted)
             log(t(f"   🏷 メディアタイプ別: {n_media} 個を {sp('media')} に整理（{names}）",
