@@ -9,6 +9,8 @@ capture month. Right: what this tool produces. Your iPhone albums become folders
 Photos in no album go to `_Unsorted`; videos and screenshots go to `_MediaTypes`.
 (The screenshot is from the Japanese UI.)
 
+📖 **Step-by-step guide with screenshots** (Japanese): [note article](https://note.com/xyzeton33/n/n26b10df81fa7)
+
 Backs up your iPhone photos and videos to a Windows PC **keeping your album and folder structure** —
 the thing Windows Photos and Explorer cannot do. Runs locally over USB. No cloud service or account needed.
 
